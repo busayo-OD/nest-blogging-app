@@ -1,84 +1,152 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NestJS Blogging Project
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This is a RESTful blogging API built with NestJS and PostgreSQL. The application allows users to create, manage, and publish blogs with functionality for authentication, authorization, and blog management, including pagination, filtering, and search.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- User registration and login with JWT-based authentication (1-hour expiration)
+- CRUD operations for blogs with support for draft and published states
+- Blog listing for all users, including pagination, filtering, and sorting
+- Individual blog retrieval, which increments the blog's read count
+- Blog attributes include `title`, `description`, `tags`, `author`, `timestamp`, `state`, `read_count`, `reading_time`, and `body`
+- Searchable by author, title, and tags
+- Pagination and ordering options for blogs by `read_count`, `reading_time`, and `timestamp`
 
-## Project setup
+---
 
-```bash
-$ npm install
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en/)
+- [NestJS CLI](https://docs.nestjs.com/cli/overview) (optional but recommended)
+- [PostgreSQL](https://www.postgresql.org/) database
+
+---
+
+## Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/busayo-OD/nestjs-blogging-app.git
+   cd nestjs-blogging-project
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up the environment variables** (see [Environment Variables](#environment-variables))
+
+4. **Run database migrations** (if using TypeORM or a migration tool)
+
+   ```bash
+   npm run migration:run
+   ```
+
+5. **Start the application**
+
+   ```bash
+   npm run start:dev
+   ```
+
+---
+
+## Environment Variables
+
+Create a `.env` file at the root of the project and define the following variables:
+
+```env
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=yourusername
+POSTGRES_PASSWORD=yourpassword
+POSTGRES_DB=yourdatabase
+JWT_SECRET=yourjwtsecret
+JWT_EXPIRATION_TIME_IN_SEC=yourtimeinseconds
 ```
 
-## Compile and run the project
+---
+
+## Usage
+
+Once the application is running, you can access the API through `http://localhost:3000`.
+
+### Running Tests
+
+To run the tests:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## API Endpoints
 
-# e2e tests
-$ npm run test:e2e
+### Authentication
 
-# test coverage
-$ npm run test:cov
-```
+- **POST /auth/register** - Register a new user
+- **POST /auth/login** - Log in to receive a JWT token
 
-## Resources
+### Blog Management
 
-Check out a few resources that may come in handy when working with NestJS:
+- **GET /blogs** - Retrieve a list of published blogs (paginated, searchable, and sortable)
+- **GET /blogs/:id** - Retrieve a single published blog (increases `read_count` by 1)
+- **POST /blogs** - Create a new blog (requires authentication)
+- **PATCH /blogs/:id** - Edit an existing blog (requires blog ownership)
+- **PATCH /blogs/:id/state** - Update blog state to `published` (requires blog ownership)
+- **DELETE /blogs/:id** - Delete an existing blog (requires blog ownership)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### User Blogs
 
-## Support
+- **GET /users/:userId/blogs** - Retrieve a list of blogs by a user (paginated, filterable by state)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## Database Schema
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### User
+
+| Field       | Type       | Description                   |
+|-------------|------------|-------------------------------|
+| id          | UUID       | Primary key                   |
+| first_name  | String     | User's first name             |
+| last_name   | String     | User's last name              |
+| email       | String     | Unique user email            |
+| password    | String     | Hashed password               |
+| created_at  | Timestamp  | Account creation date         |
+
+### Blog
+
+| Field        | Type       | Description                           |
+|--------------|------------|---------------------------------------|
+| id           | UUID       | Primary key                           |
+| title        | String     | Blog title                            |
+| description  | String     | Short description of the blog         |
+| tags         | Array      | List of tags                          |
+| author_id    | UUID       | Reference to the user who created it  |
+| timestamp    | Timestamp  | Creation or last update date          |
+| state        | Enum       | Blog state (`draft` or `published`)   |
+| read_count   | Integer    | Number of times blog was read         |
+| reading_time | Integer    | Estimated reading time in minutes     |
+| body         | Text       | Content of the blog                   |
+
+---
+
+## Notes
+
+- JWT tokens expire after one hour. Users need to re-authenticate after expiration.
+- The reading time is calculated based on the average reading speed of 200 words per minute.
+- Blog lists support pagination, filtering, and sorting by `read_count`, `reading_time`, and `timestamp`.
+- For more detailed documentation on each endpoint, refer to the [Swagger API docs]() 
+
+---
 
 ## License
 
