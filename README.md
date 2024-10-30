@@ -32,7 +32,7 @@ This is a RESTful blogging API built with NestJS and PostgreSQL. The application
 
    ```bash
    git clone https://github.com/busayo-OD/nestjs-blogging-app.git
-   cd nestjs-blogging-project
+   cd nestjs-blogging-app
    ```
 
 2. **Install dependencies**
