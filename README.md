@@ -144,7 +144,7 @@ npm run test
 - JWT tokens expire after one hour. Users need to re-authenticate after expiration.
 - The reading time is calculated based on the average reading speed of 200 words per minute.
 - Blog lists support pagination, filtering, and sorting by `read_count`, `reading_time`, and `timestamp`.
-- For more detailed documentation on each endpoint, refer to the [Swagger API docs]() 
+- For more detailed documentation on each endpoint, refer to the [Swagger API docs]('http://localhost:3000/api-docs') when the app is running.
 
 ---
 

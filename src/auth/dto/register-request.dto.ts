@@ -1,6 +1,16 @@
-export type RegisterRequestDto = {
-    firstname: string;
-    lastname: string;
-    email: string;
-    password: string;
-  };
+import { ApiProperty } from '@nestjs/swagger';
+
+export class RegisterRequestDto {
+  
+  @ApiProperty()
+  firstname: string;
+
+  @ApiProperty()
+  lastname: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  password: string;
+}

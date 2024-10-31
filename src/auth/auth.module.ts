@@ -18,7 +18,7 @@ import { LocalStrategy } from './strategy/local.strategy';
         signOptions: {
           expiresIn: parseInt(
             configService.getOrThrow<string>(
-              'ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC',
+              'JWT_EXPIRATION_TIME_IN_SEC',
             ),
           ),
         },
