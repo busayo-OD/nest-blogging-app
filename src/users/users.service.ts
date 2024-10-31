@@ -26,4 +26,10 @@ export class UsersService {
   update(userId: UUID, userInformation: Partial<User>): Promise<UpdateResult> {
     return this.usersRepository.update(userId, userInformation);
   }
+
+  async createUser(user: Partial<User>): Promise<User> {
+    const newUser = this.usersRepository.create(user);
+    return await this.usersRepository.save(newUser);
+  }
+
 }

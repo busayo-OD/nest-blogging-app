@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { UUID } from 'crypto';
+import { Blog } from 'src/blog/entities/blog.entity';
 
 @Entity()
 export class User {
@@ -17,6 +18,15 @@ export class User {
 
   @Column()
   password: string;
+
+  @OneToMany(() => Blog, (blog) => blog.author)
+  articles: Blog[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
 
 }
