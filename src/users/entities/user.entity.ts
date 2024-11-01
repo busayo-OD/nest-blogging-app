@@ -1,11 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { UUID } from 'crypto';
 import { Blog } from 'src/blog/entities/blog.entity';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn()
-  id?: UUID;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   firstname: string;
@@ -27,6 +26,5 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
 
 }

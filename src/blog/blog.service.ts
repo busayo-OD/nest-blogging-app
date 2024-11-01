@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './entities/blog.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CreateBlogDto } from './dto/create-blog.dto';
-import { UUID } from 'crypto';
 
 @Injectable()
 export class BlogService {
@@ -15,9 +14,9 @@ export class BlogService {
     private userRepository: Repository<User>,
   ) {}
 
-  async createArticle(createArticleDto: CreateBlogDto, userId: UUID): Promise<Blog> {
+  async createArticle(createArticleDto: CreateBlogDto, userId: string): Promise<Blog> {
     const { title, description, tags, body } = createArticleDto;
-    
+
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -34,15 +33,47 @@ export class BlogService {
 
     const savedArticle = await this.blogRepository.save(newArticle);
 
-    // Optionally, update the user's articles list if needed
     user.articles = [...(user.articles || []), savedArticle];
     await this.userRepository.save(user);
 
     return savedArticle;
   }
 
-  private calculateReadingTime(body: string): Record<string, any> {
-    // Define logic for reading time calculation here
-    return { minutes: Math.ceil(body.split(' ').length / 200) };
+
+  private calculateReadingTime(text: string): { time: number; words: number } {
+    const words = text.split(' ').length;
+    const time = Math.ceil(words / 200);
+    return { time, words };
+  }
+
+  async findOneByIdAndAuthor(id: number, authorId: string): Promise<Blog | null> {
+    const article = await this.blogRepository.findOne({
+      where: {
+        id,
+        author: { id: authorId },
+      },
+    });
+  
+    if (!article) {
+      throw new HttpException('Article not found or you are not the author', HttpStatus.NOT_FOUND);
+    }
+    return article;
+  }
+  
+
+  async updateArticleState(id: number, userId: string, state: string): Promise<Blog> {
+    const article = await this.findOneByIdAndAuthor(id, userId);
+
+    switch (state) {
+      case 'published':
+        article.state = state;
+        return await this.blogRepository.save(article);
+
+      case 'draft':
+        throw new HttpException('Draft state not allowed', HttpStatus.BAD_REQUEST);
+
+      default:
+        throw new HttpException('Invalid state', HttpStatus.BAD_REQUEST);
+    }
   }
 }
