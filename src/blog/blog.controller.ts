@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query, NotFoundException, ForbiddenException, Delete } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -90,6 +90,30 @@ export class BlogController {
         throw error;
       }
       throw new NotFoundException('An error occurred while fetching the article');
+    }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  async deleteArticleById(@Param('id') id: number, @Req() req) {
+    const userId = req.user.id;
+
+    try {
+      const article = await this.blogService.deleteArticleById(id, userId);
+
+      return {
+        status: true,
+        message: 'Article deleted successfully',
+        article,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(error.message);
+      }
+      if (error instanceof ForbiddenException) {
+        throw new ForbiddenException(error.message);
+      }
+      throw error;
     }
   }
 }

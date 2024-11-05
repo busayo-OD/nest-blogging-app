@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './entities/blog.entity';
@@ -194,4 +194,22 @@ export class BlogService {
       throw new InternalServerErrorException('Error fetching the article');
     }
   }
+
+  async deleteArticleById(id: number, userId: string) {
+    
+    const article = await this.blogRepository.findOne({ where: { id } });
+  
+    if (!article) {
+      throw new NotFoundException('Article not found');
+    }
+  
+    if (article.author.toString() !== userId) {
+      throw new ForbiddenException('You do not have permission to delete this article');
+    }
+  
+    await this.blogRepository.delete({ id });
+  
+    return article;
+  }  
+
 }
