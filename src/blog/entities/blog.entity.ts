@@ -26,11 +26,11 @@ export class Blog {
   @Column({ type: 'int', default: 0 })
   readCount: number;
 
-  @Column({ type: 'jsonb', nullable: true })
-  readingTime: Record<string, any>;
+  @Column({ type: 'int', nullable: false })
+  readingTime: number;
 
-  @Column({ type: 'varchar', nullable: true })
-  tags: string;
+  @Column({ type: 'simple-array', nullable: true })
+  tags: string[];
 
   @Column({ type: 'text', nullable: false })
   body: string;

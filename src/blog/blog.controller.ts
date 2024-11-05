@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { Blog } from './entities/blog.entity';
 import { AuthenticatedRequest } from 'src/types/authenticated-request.interface';
+import { UpdateBlogDto } from './dto/update-blog.dto';
 
 @Controller('blogs')
 export class BlogController {
@@ -18,6 +19,7 @@ export class BlogController {
   }
 
   @Put(':id/state')
+  @UseGuards(AuthGuard('jwt'))
   async updateArticleState(
     @Param('id') id: number,
     @Body('state') state: string,
@@ -37,4 +39,33 @@ export class BlogController {
       throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id')
+  async updateArticle(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+    @Body() updates: UpdateBlogDto,
+  ): Promise<Blog> {
+    const userId = req.user._id;
+
+    return await this.blogService.editArticle(id, userId, updates);
+  }
+
+  @Get()
+  async getArticles(@Query() query) {
+    try {
+      const articles = await this.blogService.getArticles(query);
+      return { status: true, articles };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof InternalServerErrorException) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw new InternalServerErrorException('Unexpected error');
+    }
+  }
 }
+

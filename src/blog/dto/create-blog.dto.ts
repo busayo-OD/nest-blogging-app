@@ -11,7 +11,7 @@ export class CreateBlogDto {
 
   @IsString()
   @IsOptional()
-  tags?: string;
+  tags?: string[];
 
   @IsString()
   @IsNotEmpty()

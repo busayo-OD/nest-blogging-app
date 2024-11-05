@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Blog } from './entities/blog.entity';
@@ -40,10 +40,10 @@ export class BlogService {
   }
 
 
-  private calculateReadingTime(text: string): { time: number; words: number } {
-    const words = text.split(' ').length;
-    const time = Math.ceil(words / 200);
-    return { time, words };
+  private calculateReadingTime(text: string): number {
+    const words = text.trim().split(/\s+/).length;
+    const wordsPerMinute = 200;
+    return Math.ceil(words / wordsPerMinute);
   }
 
   async findOneByIdAndAuthor(id: number, authorId: string): Promise<Blog | null> {
@@ -76,4 +76,84 @@ export class BlogService {
         throw new HttpException('Invalid state', HttpStatus.BAD_REQUEST);
     }
   }
+
+  async editArticle(id: number, userId: string, updates: Partial<Blog>): Promise<Blog> {
+    const allowedUpdates = ['description', 'title', 'body', 'tags'];
+    const updateKeys = Object.keys(updates);
+
+    // Validate update fields
+    const isValidOperation = updateKeys.every((key) => allowedUpdates.includes(key));
+    if (!isValidOperation) {
+        throw new BadRequestException('Invalid updates!');
+    }
+
+    // Find the article by id and author
+    const article = await this.blogRepository.findOne({
+        where: { id, author: { id: userId } },
+        relations: ['author'], // Ensure 'author' relation is loaded if required by ORM
+    });
+
+    if (!article) {
+        throw new NotFoundException('Article not found or you are not the author');
+    }
+
+    // Apply updates using safer type assertions
+    updateKeys.forEach((key) => {
+        if (key in article && updates[key] !== undefined) {
+            (article as any)[key] = updates[key];
+        }
+    });
+
+    // Save updated article
+    return this.blogRepository.save(article);
+}
+
+async getArticles(query: any) {
+  const { title, tags, state, page = 1, per_page = 20 } = query;
+
+  // Construct query
+  const findQuery: any = {};
+
+  // Validate `state`
+  if (state === 'draft') {
+    throw new BadRequestException('You cannot read a blog post in draft state');
+  }
+  if (state) {
+    findQuery.state = state;
+  }
+
+  // Add title and tags filters if provided
+  if (title) {
+    findQuery.title = title;
+  }
+  if (tags) {
+    findQuery.tags = tags;
+  }
+
+  // Validate and set pagination
+  const pageNumber = Number(page);
+  const perPageNumber = Number(per_page);
+
+  if (isNaN(pageNumber) || pageNumber < 1) {
+    throw new BadRequestException('Page must be a positive number');
+  }
+  if (isNaN(perPageNumber) || perPageNumber < 1) {
+    throw new BadRequestException('Per_page must be a positive number');
+  }
+
+  const skip = (pageNumber - 1) * perPageNumber;
+  const take = perPageNumber;
+
+  try {
+    // Fetch articles with pagination
+    return await this.blogRepository.find({
+      where: findQuery,
+      skip,
+      take,
+    });
+  } catch {
+    throw new InternalServerErrorException('Error fetching articles');
+  }
+}
+
 }
