@@ -14,39 +14,33 @@ export class BlogService {
     private userRepository: Repository<User>,
   ) {}
 
-  async createArticle(
-    createArticleDto: CreateBlogDto,
-    userId: string,
-  ): Promise<Blog> {
-    const { title, description, tags, body } = createArticleDto;
-
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
-
-    const readingTime = this.calculateReadingTime(body);
-
+  async createArticle(createArticleDto: CreateBlogDto, userId: string) {
+    if (!userId) {
+      throw new Error('User ID is required to create an article.');
+    }
+  
+    const readingTime = this.calculateReadingTime(createArticleDto.body);
+    const author = await this.userRepository.findOne({ where: { id: userId } });
+  
+    if (!author) {
+      throw new NotFoundException('Author not found');
+    }
+  
     const newArticle = this.blogRepository.create({
-      title,
-      description,
-      tags,
-      body,
+      ...createArticleDto,
+      author,
       readingTime,
-      author: user,
     });
-
-    const savedArticle = await this.blogRepository.save(newArticle);
-
-    user.articles = [...(user.articles || []), savedArticle];
-    await this.userRepository.save(user);
-
-    return savedArticle;
+  
+    return await this.blogRepository.save(newArticle);
   }
-
+  
   private calculateReadingTime(text: string): number {
     const words = text.trim().split(/\s+/).length;
     const wordsPerMinute = 200;
     return Math.ceil(words / wordsPerMinute);
   }
+  
 
   async findOneByIdAndAuthor(
     id: number,
@@ -210,6 +204,10 @@ export class BlogService {
     await this.blogRepository.delete({ id });
   
     return article;
-  }  
+  } 
+  
+  async getUserArticles(userId: string) {
+    return await this.blogRepository.find({ where: { author: { id: userId } } });
+  }
 
 }

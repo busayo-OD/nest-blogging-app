@@ -5,6 +5,7 @@ import { CreateBlogDto } from './dto/create-blog.dto';
 import { Blog } from './entities/blog.entity';
 import { AuthenticatedRequest } from 'src/types/authenticated-request.interface';
 import { UpdateBlogDto } from './dto/update-blog.dto';
+import { CurrentUser } from '@app/auth/decorators/current-user.decorator';
 
 @Controller('blogs')
 export class BlogController {
@@ -115,6 +116,20 @@ export class BlogController {
       }
       throw error;
     }
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('my-articles')
+  async getUserArticles(@CurrentUser() user: any) {
+    const userId = user.id;
+
+    const articles = await this.blogService.getUserArticles(userId);
+
+    return {
+      status: true,
+      message: 'Articles fetched successfully',
+      articles,
+    };
   }
 }
 
