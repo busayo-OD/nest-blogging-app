@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query, NotFoundException } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -12,9 +12,15 @@ export class BlogController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  async createArticle(@Body() createArticleDto: CreateBlogDto, @Req() req: any) {
+  async createArticle(
+    @Body() createArticleDto: CreateBlogDto,
+    @Req() req: any,
+  ) {
     const userId = req.user.id;
-    const savedArticle = await this.blogService.createArticle(createArticleDto, userId);
+    const savedArticle = await this.blogService.createArticle(
+      createArticleDto,
+      userId,
+    );
     return { statusCode: 201, data: savedArticle };
   }
 
@@ -28,15 +34,21 @@ export class BlogController {
     const userId = req.user._id;
 
     try {
-      const updatedArticle = await this.blogService.updateArticleState(id, userId, state);
+      const updatedArticle = await this.blogService.updateArticleState(
+        id,
+        userId,
+        state,
+      );
       return { status: true, article: updatedArticle };
     } catch (error) {
-      
       if (error instanceof HttpException) {
         throw error;
       }
       console.error('Error updating article state:', error);
-      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Internal Server Error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -65,6 +77,19 @@ export class BlogController {
         throw new InternalServerErrorException(error.message);
       }
       throw new InternalServerErrorException('Unexpected error');
+    }
+  }
+
+  @Get(':id')
+  async getArticleById(@Param('id') id: number) {
+    try {
+      const result = await this.blogService.getArticleById(id);
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException('An error occurred while fetching the article');
     }
   }
 }

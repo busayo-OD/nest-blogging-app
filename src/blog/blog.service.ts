@@ -14,7 +14,10 @@ export class BlogService {
     private userRepository: Repository<User>,
   ) {}
 
-  async createArticle(createArticleDto: CreateBlogDto, userId: string): Promise<Blog> {
+  async createArticle(
+    createArticleDto: CreateBlogDto,
+    userId: string,
+  ): Promise<Blog> {
     const { title, description, tags, body } = createArticleDto;
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -39,29 +42,37 @@ export class BlogService {
     return savedArticle;
   }
 
-
   private calculateReadingTime(text: string): number {
     const words = text.trim().split(/\s+/).length;
     const wordsPerMinute = 200;
     return Math.ceil(words / wordsPerMinute);
   }
 
-  async findOneByIdAndAuthor(id: number, authorId: string): Promise<Blog | null> {
+  async findOneByIdAndAuthor(
+    id: number,
+    authorId: string,
+  ): Promise<Blog | null> {
     const article = await this.blogRepository.findOne({
       where: {
         id,
         author: { id: authorId },
       },
     });
-  
+
     if (!article) {
-      throw new HttpException('Article not found or you are not the author', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Article not found or you are not the author',
+        HttpStatus.NOT_FOUND,
+      );
     }
     return article;
   }
-  
 
-  async updateArticleState(id: number, userId: string, state: string): Promise<Blog> {
+  async updateArticleState(
+    id: number,
+    userId: string,
+    state: string,
+  ): Promise<Blog> {
     const article = await this.findOneByIdAndAuthor(id, userId);
 
     switch (state) {
@@ -70,90 +81,117 @@ export class BlogService {
         return await this.blogRepository.save(article);
 
       case 'draft':
-        throw new HttpException('Draft state not allowed', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Draft state not allowed',
+          HttpStatus.BAD_REQUEST,
+        );
 
       default:
         throw new HttpException('Invalid state', HttpStatus.BAD_REQUEST);
     }
   }
 
-  async editArticle(id: number, userId: string, updates: Partial<Blog>): Promise<Blog> {
+  async editArticle(
+    id: number,
+    userId: string,
+    updates: Partial<Blog>,
+  ): Promise<Blog> {
     const allowedUpdates = ['description', 'title', 'body', 'tags'];
     const updateKeys = Object.keys(updates);
 
-    // Validate update fields
-    const isValidOperation = updateKeys.every((key) => allowedUpdates.includes(key));
+    const isValidOperation = updateKeys.every((key) =>
+      allowedUpdates.includes(key),
+    );
     if (!isValidOperation) {
-        throw new BadRequestException('Invalid updates!');
+      throw new BadRequestException('Invalid updates!');
     }
 
-    // Find the article by id and author
     const article = await this.blogRepository.findOne({
-        where: { id, author: { id: userId } },
-        relations: ['author'], // Ensure 'author' relation is loaded if required by ORM
+      where: { id, author: { id: userId } },
+      relations: ['author'], 
     });
 
     if (!article) {
-        throw new NotFoundException('Article not found or you are not the author');
+      throw new NotFoundException(
+        'Article not found or you are not the author',
+      );
     }
 
-    // Apply updates using safer type assertions
     updateKeys.forEach((key) => {
-        if (key in article && updates[key] !== undefined) {
-            (article as any)[key] = updates[key];
-        }
+      if (key in article && updates[key] !== undefined) {
+        (article as any)[key] = updates[key];
+      }
     });
 
-    // Save updated article
     return this.blogRepository.save(article);
-}
-
-async getArticles(query: any) {
-  const { title, tags, state, page = 1, per_page = 20 } = query;
-
-  // Construct query
-  const findQuery: any = {};
-
-  // Validate `state`
-  if (state === 'draft') {
-    throw new BadRequestException('You cannot read a blog post in draft state');
-  }
-  if (state) {
-    findQuery.state = state;
   }
 
-  // Add title and tags filters if provided
-  if (title) {
-    findQuery.title = title;
-  }
-  if (tags) {
-    findQuery.tags = tags;
+  async getArticles(query: any) {
+    const { title, tags, state, page = 1, per_page = 20 } = query;
+
+    const findQuery: any = {};
+
+    if (state === 'draft') {
+      throw new BadRequestException(
+        'You cannot read a blog post in draft state',
+      );
+    }
+    if (state) {
+      findQuery.state = state;
+    }
+
+    if (title) {
+      findQuery.title = title;
+    }
+    if (tags) {
+      findQuery.tags = tags;
+    }
+
+    const pageNumber = Number(page);
+    const perPageNumber = Number(per_page);
+
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      throw new BadRequestException('Page must be a positive number');
+    }
+    if (isNaN(perPageNumber) || perPageNumber < 1) {
+      throw new BadRequestException('Per_page must be a positive number');
+    }
+
+    const skip = (pageNumber - 1) * perPageNumber;
+    const take = perPageNumber;
+
+    try {
+      return await this.blogRepository.find({
+        where: findQuery,
+        skip,
+        take,
+      });
+    } catch {
+      throw new InternalServerErrorException('Error fetching articles');
+    }
   }
 
-  // Validate and set pagination
-  const pageNumber = Number(page);
-  const perPageNumber = Number(per_page);
+  async getArticleById(id: number) {
+    try {
+      const article = await this.blogRepository.findOne({ where: { id } });
 
-  if (isNaN(pageNumber) || pageNumber < 1) {
-    throw new BadRequestException('Page must be a positive number');
+      if (!article) {
+        throw new NotFoundException('Article not found');
+      }
+
+      if (article.state !== 'published') {
+        throw new NotFoundException('Article is not published');
+      }
+
+      article.readCount += 1;
+      await this.blogRepository.save(article);
+
+      return { status: true, article };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error fetching the article');
+    }
   }
-  if (isNaN(perPageNumber) || perPageNumber < 1) {
-    throw new BadRequestException('Per_page must be a positive number');
-  }
-
-  const skip = (pageNumber - 1) * perPageNumber;
-  const take = perPageNumber;
-
-  try {
-    // Fetch articles with pagination
-    return await this.blogRepository.find({
-      where: findQuery,
-      skip,
-      take,
-    });
-  } catch {
-    throw new InternalServerErrorException('Error fetching articles');
-  }
-}
-
 }
