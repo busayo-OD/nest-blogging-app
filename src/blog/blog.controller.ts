@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Put, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query, NotFoundException, ForbiddenException, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, HttpException, HttpStatus, Param, Patch, ParseIntPipe, BadRequestException, InternalServerErrorException, Get, Query, NotFoundException, ForbiddenException, Delete } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateBlogDto } from './dto/create-blog.dto';
@@ -6,6 +6,7 @@ import { Blog } from './entities/blog.entity';
 import { AuthenticatedRequest } from 'src/types/authenticated-request.interface';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { CurrentUser } from '@app/auth/decorators/current-user.decorator';
+import { Public } from '@app/auth/decorators/public.decorator';
 
 @Controller('blogs')
 export class BlogController {
@@ -25,7 +26,7 @@ export class BlogController {
     return { statusCode: 201, data: savedArticle };
   }
 
-  @Put(':id/state')
+  @Patch(':id/state')
   @UseGuards(AuthGuard('jwt'))
   async updateArticleState(
     @Param('id') id: number,
@@ -62,9 +63,19 @@ export class BlogController {
   ): Promise<Blog> {
     const userId = req.user._id;
 
+    const result = await this.blogService.getArticleById(id);
+    const article = result.article;
+
+    if (article?.author?.id !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to edit this article',
+      );
+    }
+
     return await this.blogService.editArticle(id, userId, updates);
   }
 
+  @Public()
   @Get()
   async getArticles(@Query() query) {
     try {
@@ -81,6 +92,7 @@ export class BlogController {
     }
   }
 
+  @Public()
   @Get(':id')
   async getArticleById(@Param('id') id: number) {
     try {
@@ -90,7 +102,9 @@ export class BlogController {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new NotFoundException('An error occurred while fetching the article');
+      throw new NotFoundException(
+        'An error occurred while fetching the article',
+      );
     }
   }
 

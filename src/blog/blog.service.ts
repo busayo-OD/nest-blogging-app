@@ -92,34 +92,36 @@ export class BlogService {
   ): Promise<Blog> {
     const allowedUpdates = ['description', 'title', 'body', 'tags'];
     const updateKeys = Object.keys(updates);
-
+  
+    // Check for valid updates
     const isValidOperation = updateKeys.every((key) =>
       allowedUpdates.includes(key),
     );
+    
     if (!isValidOperation) {
       throw new BadRequestException('Invalid updates!');
     }
-
+  
+    // Find the article with the given ID and author
     const article = await this.blogRepository.findOne({
-      where: { id, author: { id: userId } },
-      relations: ['author'], 
+      where: { id, author: { id: userId } }, // Ensure we check the author as well
+      relations: ['author'],
     });
-
+  
     if (!article) {
-      throw new NotFoundException(
-        'Article not found or you are not the author',
-      );
+      throw new NotFoundException('Article not found or you are not the author');
     }
-
-    updateKeys.forEach((key) => {
-      if (key in article && updates[key] !== undefined) {
-        (article as any)[key] = updates[key];
-      }
-    });
-
-    return this.blogRepository.save(article);
+  
+    if (updates.body) {
+      const newReadingTime = this.calculateReadingTime(updates.body);
+      article.readingTime = newReadingTime;
+    }
+  
+    Object.assign(article, updates);
+    
+    return await this.blogRepository.save(article);
   }
-
+  
   async getArticles(query: any) {
     const { title, tags, state, page = 1, per_page = 20 } = query;
 
