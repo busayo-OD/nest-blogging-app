@@ -1,5 +1,6 @@
 import { User } from 'src/users/entities/user.entity';
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { BlogState } from '../enums/blog-state.enum';
 
 @Entity()
 export class Blog {
@@ -17,11 +18,11 @@ export class Blog {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'published'],
-    default: 'draft',
+    enum: BlogState,
+    default: BlogState.DRAFT,
     nullable: false,
   })
-  state: 'draft' | 'published';
+  state: BlogState;
 
   @Column({ type: 'int', default: 0 })
   readCount: number;

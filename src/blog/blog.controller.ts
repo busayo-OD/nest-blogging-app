@@ -7,6 +7,7 @@ import { AuthenticatedRequest } from 'src/types/authenticated-request.interface'
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { CurrentUser } from '@app/auth/decorators/current-user.decorator';
 import { Public } from '@app/auth/decorators/public.decorator';
+import { UpdateBlogStateDto } from './dto/update-blog-state.dto';
 
 @Controller('blogs')
 export class BlogController {
@@ -30,7 +31,7 @@ export class BlogController {
   @UseGuards(AuthGuard('jwt'))
   async updateArticleState(
     @Param('id') id: number,
-    @Body('state') state: string,
+    @Body() updateBlogStateDto: UpdateBlogStateDto,
     @Req() req: AuthenticatedRequest,
   ): Promise<{ status: boolean; article: Blog }> {
     const userId = req.user._id;
@@ -39,7 +40,7 @@ export class BlogController {
       const updatedArticle = await this.blogService.updateArticleState(
         id,
         userId,
-        state,
+        updateBlogStateDto.state,
       );
       return { status: true, article: updatedArticle };
     } catch (error) {
