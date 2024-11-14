@@ -22,6 +22,7 @@
       "@app/*": ["src/*"],
       "@modules/*": ["src/modules/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "src/types/express.d.ts"]
 }
 

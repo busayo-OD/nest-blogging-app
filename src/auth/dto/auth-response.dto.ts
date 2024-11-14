@@ -1,3 +1,11 @@
-import { AccessToken } from "../types/access-token";
+import { ApiProperty } from '@nestjs/swagger';
+import { AccessToken } from '../types/access-token';
 
-export type AuthResponseDTO = AccessToken;
+export class AuthResponseDTO {
+  @ApiProperty()
+  access_token: string;
+
+  constructor(accessToken: AccessToken) {
+    this.access_token = accessToken.access_token;
+  }
+}
