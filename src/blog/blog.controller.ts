@@ -23,7 +23,11 @@ import { AuthenticatedRequest } from 'src/types/authenticated-request.interface'
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Public } from '@app/auth/decorators/public.decorator';
 import { UpdateBlogStateDto } from './dto/update-blog-state.dto';
-import { ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { BlogResponseDto } from './dto/blog-response.dto';
 import { MyBlogResponseDto } from './dto/my-blog-response.dto';
 
@@ -33,6 +37,12 @@ export class BlogController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
+  @Get()
+  @ApiCreatedResponse({
+    type: CreateBlogDto,
+    isArray: false,
+  })
+  @ApiBearerAuth('JWT-auth')
   async createArticle(
     @Body() createArticleDto: CreateBlogDto,
     @Req() req: AuthenticatedRequest,
@@ -63,6 +73,12 @@ export class BlogController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('my-articles')
+  @Get()
+  @ApiOkResponse({
+    type: MyBlogResponseDto,
+    isArray: true,
+  })
+  @ApiBearerAuth('JWT-auth')
   async getUserArticles(
     @Req() req: AuthenticatedRequest,
   ): Promise<MyBlogResponseDto[]> {
@@ -81,6 +97,12 @@ export class BlogController {
 
   @Patch(':id/state')
   @UseGuards(AuthGuard('jwt'))
+  @Get()
+  @ApiOkResponse({
+    type: MyBlogResponseDto,
+    isArray: false,
+  })
+  @ApiBearerAuth('JWT-auth')
   async updateArticleState(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateBlogStateDto: UpdateBlogStateDto,
@@ -100,6 +122,12 @@ export class BlogController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
+  @Get()
+  @ApiOkResponse({
+    type: MyBlogResponseDto,
+    isArray: false,
+  })
+  @ApiBearerAuth('JWT-auth')
   async updateArticle(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: AuthenticatedRequest,
@@ -143,6 +171,12 @@ export class BlogController {
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
+  @ApiOkResponse({
+    schema: {
+      example: { status: 'true' },
+    },
+  })
+  @ApiBearerAuth('JWT-auth')
   async deleteArticleById(
     @Param('id') id: number,
     @Req() req: AuthenticatedRequest,
@@ -154,7 +188,8 @@ export class BlogController {
     }
 
     try {
-      return await this.blogService.deleteArticleById(id, userId);
+      await this.blogService.deleteArticleById(id, userId);
+      return { status: 'true' };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new NotFoundException(error.message);
