@@ -1,13 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../src/app.module';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
+  let authToken: string;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+  beforeAll(async () => {
+    const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
@@ -15,10 +16,32 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('should register a user and return a JWT token', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        firstname: 'John',
+        lastname: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.access_token).toBeDefined();
+
+    authToken = response.body.access_token;
+  });
+
+  it('/ (GET)', async () => {
+    const response = await request(app.getHttpServer())
       .get('/')
-      .expect(200)
-      .expect('Hello World!');
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.text).toBe('Hello John!');
   });
 });

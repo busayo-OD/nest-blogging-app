@@ -14,6 +14,7 @@ import { JwtStrategy } from './auth/strategy/jwt.strategy';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
     }),
     UsersModule, 
     DatabaseModule, BlogModule, AuthModule,

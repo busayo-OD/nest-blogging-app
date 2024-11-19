@@ -23,6 +23,6 @@
       "@modules/*": ["src/modules/*"]
     }
   },
-  "include": ["src/**/*", "src/types/express.d.ts"]
+  "include": ["src/**/*", "src/types/express.d.ts", "test/**/*.ts", "jest.config.ts"]
 }
 

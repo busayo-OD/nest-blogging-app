@@ -21,7 +21,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { AuthenticatedRequest } from 'src/types/authenticated-request.interface';
 import { UpdateBlogDto } from './dto/update-blog.dto';
-import { Public } from '@app/auth/decorators/public.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UpdateBlogStateDto } from './dto/update-blog-state.dto';
 import {
   ApiBearerAuth,

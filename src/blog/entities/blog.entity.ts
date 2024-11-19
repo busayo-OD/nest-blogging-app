@@ -1,6 +1,6 @@
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { BlogState } from '../enums/blog-state.enum';
+import { BlogState } from '../../blog/enums/blog-state.enum';
 
 @Entity()
 export class Blog {
