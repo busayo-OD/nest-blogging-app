@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, BeforeInsert } from 'typeorm';
 import { Blog } from '../../blog/entities/blog.entity';
+import { v4 as uuidv4 } from 'uuid';
+
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn('increment')
   id: string;
 
   @Column()
@@ -12,7 +14,7 @@ export class User {
   @Column()
   lastname: string;
 
-  @Column()
+  @Column({ unique: true })
   email: string;
 
   @Column()
@@ -27,4 +29,9 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @BeforeInsert()
+  generateId() {
+    this.id = uuidv4();
+  }
 }
+

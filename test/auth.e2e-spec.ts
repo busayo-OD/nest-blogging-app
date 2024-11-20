@@ -17,11 +17,22 @@ describe('AuthController (e2e)', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
+    // Connect to the test database
     dataSource = app.get(DataSource);
-    await dataSource.synchronize(true);
+
+    if (!dataSource.isInitialized) {
+      await dataSource.initialize();
+    }
+
+    // Drop and recreate the database schema
+    await dataSource.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
+    await dataSource.synchronize();
   });
 
   afterAll(async () => {
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
     await app.close();
   });
 
@@ -60,8 +71,7 @@ describe('AuthController (e2e)', () => {
         .send(registerData)
         .expect(400);
 
-      // Updated message expectation to match actual response
-      expect(duplicateResponse.body.message).toBe('Registration failed'); // Adjusted to match response
+      expect(duplicateResponse.body.message).toBe('Registration failed'); // Match current API behavior
     });
   });
 
@@ -75,7 +85,7 @@ describe('AuthController (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send(loginData)
-        .expect(201); // Accept 201 if your controller returns that on login (otherwise, change to 200)
+        .expect(201);
 
       expect(response.body).toHaveProperty('access_token');
       expect(response.body.access_token).toBeDefined();
