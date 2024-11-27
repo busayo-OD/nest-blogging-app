@@ -7,14 +7,15 @@ import {
   Param,
   Patch,
   ParseIntPipe,
-  BadRequestException,
-  InternalServerErrorException,
   Get,
   Query,
   NotFoundException,
   ForbiddenException,
   Delete,
   UnauthorizedException,
+  Inject,
+  Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -22,7 +23,6 @@ import { CreateBlogDto } from './dto/create-blog.dto';
 import { AuthenticatedRequest } from 'src/types/authenticated-request.interface';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Public } from '../auth/decorators/public.decorator';
-import { UpdateBlogStateDto } from './dto/update-blog-state.dto';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -30,14 +30,20 @@ import {
 } from '@nestjs/swagger';
 import { BlogResponseDto } from './dto/blog-response.dto';
 import { MyBlogResponseDto } from './dto/my-blog-response.dto';
+import { CacheKey, CacheTTL, Cache } from '@nestjs/cache-manager';
+import { UpdateBlogStateDto } from './dto/update-blog-state.dto';
 
 @Controller('blogs')
 export class BlogController {
-  constructor(private readonly blogService: BlogService) {}
+  private readonly logger = new Logger(BlogController.name);
+
+  constructor(
+    private readonly blogService: BlogService,
+    @Inject('CACHE_MANAGER') private readonly cacheManager: Cache,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  @Get()
   @ApiCreatedResponse({
     type: CreateBlogDto,
     isArray: false,
@@ -48,32 +54,56 @@ export class BlogController {
     @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user.userId;
-    return await this.blogService.createArticle(createArticleDto, userId);
+    const article = await this.blogService.createArticle(
+      createArticleDto,
+      userId,
+    );
+
+    // Invalidate the cache after creating the new article
+    await this.cacheManager.del('all_blogs');
+    this.logger.log('Cache invalidated for all_blogs after creating article');
+
+    return article;
   }
 
   @Public()
   @Get()
+  @CacheKey('all_blogs')
+  @CacheTTL(60)
   @ApiOkResponse({
     type: BlogResponseDto,
     isArray: true,
   })
   async getArticles(@Query() query) {
+    const cacheKey = 'all_blogs';
+
+    // Check cache for articles
+    const cachedArticles = await this.cacheManager.get(cacheKey);
+    if (cachedArticles) {
+      this.logger.log('Cache hit for all_blogs:', cachedArticles);
+      return cachedArticles;
+    }
+
+    this.logger.log('Cache miss for all_blogs, fetching articles from DB');
     try {
-      return await this.blogService.getArticles(query);
+      const articles = await this.blogService.getArticles(query);
+      this.logger.log('Fetched articles from DB:', articles);
+
+      // Cache the fetched articles (set ttl as number instead of an object)
+      await this.cacheManager.set(cacheKey, articles, 60);
+      this.logger.log('Articles cached:', articles);
+
+      return articles;
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw new BadRequestException(error.message);
-      }
-      if (error instanceof InternalServerErrorException) {
-        throw new InternalServerErrorException(error.message);
-      }
-      throw new InternalServerErrorException('Unexpected error');
+      this.logger.error('Error fetching articles:', error);
+      throw new InternalServerErrorException(
+        'Error fetching articles from the database',
+      );
     }
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('my-articles')
-  @Get()
   @ApiOkResponse({
     type: MyBlogResponseDto,
     isArray: true,
@@ -88,41 +118,13 @@ export class BlogController {
       throw new UnauthorizedException('User not authenticated');
     }
 
-    console.log('Authenticated user ID:', user.userId);
-
     const articles = await this.blogService.getUserArticles(user.userId);
 
     return articles.length ? articles : [];
   }
 
-  @Patch(':id/state')
-  @UseGuards(AuthGuard('jwt'))
-  @Get()
-  @ApiOkResponse({
-    type: MyBlogResponseDto,
-    isArray: false,
-  })
-  @ApiBearerAuth('JWT-auth')
-  async updateArticleState(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateBlogStateDto: UpdateBlogStateDto,
-    @Req() req: AuthenticatedRequest,
-  ): Promise<MyBlogResponseDto> {
-    console.log('req.user:', req.user);
-
-    const userId = req.user.userId;
-    console.log('User ID:', userId);
-
-    return await this.blogService.updateArticleState(
-      id,
-      userId,
-      updateBlogStateDto.state,
-    );
-  }
-
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
-  @Get()
   @ApiOkResponse({
     type: MyBlogResponseDto,
     isArray: false,
@@ -136,7 +138,6 @@ export class BlogController {
     const userId = req.user.userId;
 
     const article = await this.blogService.findOneById(id);
-
     if (!article) {
       throw new NotFoundException('Article not found');
     }
@@ -147,7 +148,62 @@ export class BlogController {
       );
     }
 
-    return await this.blogService.editArticle(id, userId, updates);
+    const updatedArticle = await this.blogService.editArticle(
+      id,
+      userId,
+      updates,
+    );
+
+    // Invalidate cache after updating the article
+    await this.cacheManager.del('all_blogs');
+    this.logger.log('Cache invalidated for all_blogs after updating article');
+
+    return updatedArticle;
+  }
+
+  @Patch(':id/state')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOkResponse({
+    type: MyBlogResponseDto,
+    isArray: false,
+  })
+  @ApiBearerAuth('JWT-auth')
+  async updateArticleState(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateBlogStateDto: UpdateBlogStateDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<MyBlogResponseDto> {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    this.logger.log(`User ${userId} is updating the state of article ${id}`);
+
+    try {
+      const updatedArticle = await this.blogService.updateArticleState(
+        id,
+        userId,
+        updateBlogStateDto.state,
+      );
+
+      // Invalidate the cache for the specific article and the article list
+      await this.cacheManager.del('all_blogs');
+      await this.cacheManager.del(`article_${id}`);
+      this.logger.log(`Cache invalidated for all_blogs and article_${id}`);
+
+      return updatedArticle;
+    } catch (error) {
+      this.logger.error('Error updating article state:', error);
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException('Article not found');
+      }
+      if (error instanceof ForbiddenException) {
+        throw new ForbiddenException(error.message);
+      }
+      throw new InternalServerErrorException('Error updating article state');
+    }
   }
 
   @Public()
@@ -157,9 +213,24 @@ export class BlogController {
     isArray: false,
   })
   async getArticleById(@Param('id') id: number) {
+    const cacheKey = `article_${id}`;
+
+    // Check cache for the article
+    const cachedArticle = await this.cacheManager.get(cacheKey);
+    if (cachedArticle) {
+      this.logger.log('Cache hit for article:', cachedArticle);
+      return cachedArticle;
+    }
+
+    this.logger.log('Cache miss for article, fetching from DB');
     try {
-      return await this.blogService.getArticleById(id);
+      const article = await this.blogService.getArticleById(id);
+      // Cache the fetched article (set ttl as number instead of an object)
+      await this.cacheManager.set(cacheKey, article, 300);
+      this.logger.log('Article cached:', article);
+      return article;
     } catch (error) {
+      this.logger.error('Error fetching article:', error);
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -189,8 +260,15 @@ export class BlogController {
 
     try {
       await this.blogService.deleteArticleById(id, userId);
+
+      // Invalidate cache after deleting the article
+      await this.cacheManager.del('all_blogs');
+      await this.cacheManager.del(`article_${id}`);
+      this.logger.log('Cache invalidated for all_blogs and article_', id);
+
       return { status: 'true' };
     } catch (error) {
+      this.logger.error('Error deleting article:', error);
       if (error instanceof NotFoundException) {
         throw new NotFoundException(error.message);
       }
