@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - BlogBuddy</title> <!-- Cute Name -->
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <h3><i class="fas fa-feather-alt"></i> BlogBuddy </h3> <!-- Cute Icon and Name -->
+    <div class="section">
+      <p class="lead">Where your thoughts become stories! Write, share, and connect.</p> <!-- Playful Description -->
+    </div>
+    <div class="divider"></div>
+
+    <div class="section">
+      <form action="/auth/login" method="POST">
+        <div class="input-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="input-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <button type="submit" class="btn blue darken-1">
+          <i class="fas fa-sign-in-alt left"></i>Log In
+        </button>
+      </form>
+    </div>
+
+    <div class="section">
+      <a href="/auth/google" class="btn red darken-1">
+        <i class="fab fa-google left"></i>Log In with Google
+      </a>
+    </div>
+  </div>
+</body>
+</html>
