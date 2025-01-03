@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, BeforeInsert } from 'typeorm';
 import { Blog } from '../../blog/entities/blog.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { OAuthProvider } from './oauth-provider.entity';
 
 
 @Entity()
@@ -22,6 +23,9 @@ export class User {
 
   @OneToMany(() => Blog, (blog) => blog.author)
   articles: Blog[];
+
+  @OneToMany(() => OAuthProvider, (oauthProvider) => oauthProvider.user)
+  oauthProviders: OAuthProvider[];
 
   @CreateDateColumn()
   createdAt: Date;
