@@ -64,7 +64,9 @@ This is a RESTful blogging API built with NestJS and PostgreSQL. The application
 Create a `.env` file at the root of the project and define the following variables:
 
 ```env
-POSTGRES_HOST=localhost
+DATABASE_URL=yourdatabaseurl
+NODE_ENV=development
+POSTGRES_HOST=yourpostgreshost
 POSTGRES_PORT=5432
 POSTGRES_USER=yourusername
 POSTGRES_PASSWORD=yourpassword
