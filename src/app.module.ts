@@ -13,7 +13,6 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 
 const DEFAULT_CACHE_TTL_SECONDS = 1000 * 60 * 60;
-const REDIS_HOST = 'localhost';
 
 @Module({
   imports: [
@@ -21,17 +20,20 @@ const REDIS_HOST = 'localhost';
       isGlobal: true,
       envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
     }),
-    UsersModule, 
-    DatabaseModule, BlogModule, AuthModule,
+    UsersModule,
+    DatabaseModule,
+    BlogModule,
+    AuthModule,
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => ({
         store: await redisStore({
           ttl: DEFAULT_CACHE_TTL_SECONDS,
           socket: {
-            host: REDIS_HOST,
-            port: 6379,
+            host: process.env.REDIS_HOST,
+            port: parseInt(process.env.REDIS_PORT || '6379', 10),
           },
+          password: process.env.REDIS_PASSWORD,
         }),
       }),
     }),
