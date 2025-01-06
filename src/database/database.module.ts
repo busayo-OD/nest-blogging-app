@@ -12,18 +12,24 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const isDevelopment = configService.get<string>('NODE_ENV') === 'development';
+        const sslConfig = configService.get<string>('POSTGRES_SSL') === 'true';
 
         return {
           type: 'postgres',
-          url: configService.get<string>('DATABASE_URL') || undefined, // Use DATABASE_URL if available
+          url: configService.get<string>('DATABASE_URL') || undefined,
           host: configService.get<string>('POSTGRES_HOST'),
           port: configService.get<number>('POSTGRES_PORT'),
           username: configService.get<string>('POSTGRES_USER'),
           password: configService.get<string>('POSTGRES_PASSWORD'),
           database: configService.get<string>('POSTGRES_DB'),
           entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-          synchronize: isDevelopment, // Sync schema only in development
-          logging: isDevelopment,     // Enable SQL logging in development
+          synchronize: isDevelopment,
+          logging: isDevelopment,
+          ssl: sslConfig
+            ? {
+                rejectUnauthorized: true,
+              }
+            : false,
         };
       },
       inject: [ConfigService],
