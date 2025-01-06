@@ -7,12 +7,14 @@ This is a RESTful blogging API built with NestJS and PostgreSQL. The application
 ## Features
 
 - User registration and login with JWT-based authentication (1-hour expiration)
+- Google OAuth2 login [Login](https://blogbuddy25.onrender.com/auth/login)
 - CRUD operations for blogs with support for draft and published states
 - Blog listing for all users, including pagination, filtering, and sorting
 - Individual blog retrieval, which increments the blog's read count
 - Blog attributes include `title`, `description`, `tags`, `author`, `timestamp`, `state`, `read_count`, `reading_time`, and `body`
 - Searchable by author, title, and tags
 - Pagination and ordering options for blogs by `read_count`, `reading_time`, and `timestamp`
+- Redis cache for optimization of frequently accessed blog listings and search results
 
 ---
 
@@ -69,6 +71,12 @@ POSTGRES_PASSWORD=yourpassword
 POSTGRES_DB=yourdatabase
 JWT_SECRET=yourjwtsecret
 JWT_EXPIRATION_TIME_IN_SEC=yourtimeinseconds
+GOOGLE_CLIENT_ID=yourgoogleclientid
+GOOGLE_CLIENT_SECRET=yourgoogleclientsecret
+GOOGLE_CALLBACK_URL=yourgooglecallbackurl
+REDIS_HOST=yourredishost
+REDIS_PORT=6379
+REDIS_PASSWORD=yourredispassword
 ```
 
 ---
@@ -144,7 +152,7 @@ npm run test
 - JWT tokens expire after one hour. Users need to re-authenticate after expiration.
 - The reading time is calculated based on the average reading speed of 200 words per minute.
 - Blog lists support pagination, filtering, and sorting by `read_count`, `reading_time`, and `timestamp`.
-- For more detailed documentation on each endpoint, refer to the [Swagger API docs]('http://localhost:3000/api-docs') when the app is running.
+- For more detailed documentation on each endpoint, refer to the [Swagger API docs]('https://blogbuddy25.onrender.com/api-docs').
 
 ---
 
