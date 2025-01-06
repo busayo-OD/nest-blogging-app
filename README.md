@@ -4,6 +4,20 @@ This is a RESTful blogging API built with NestJS and PostgreSQL. The application
 
 ---
 
+## Tools and Technologies
+- Programming Language: TypeScript
+- Framework: NestJS
+- Runtime: Node.js
+- Database: PostgreSQL
+- Cache: Redis
+- API Documentation: Postman and Swagger UI
+- Containerization: Docker
+- IDE: Visual Studio Code (VSCode)
+- Template Engine: Handlebars
+- Styling: CSS
+ 
+---
+
 ## Features
 
 - User registration and login with JWT-based authentication (1-hour expiration)
